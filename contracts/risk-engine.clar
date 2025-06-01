@@ -1,8 +1,9 @@
-;; BitRisk Protocol - Risk Engine Contract (v3.0)
-;; Enhanced risk calculation with position tracking integration
+;; BitRisk Protocol - Risk Engine Contract
+;; Portfolio-wide risk calculation and analysis
 
 ;; Error codes
 (define-constant ERR-UNAUTHORIZED (err u401))
+(define-constant ERR-INVALID-RISK-LEVEL (err u402))
 (define-constant ERR-POSITION-NOT-FOUND (err u403))
 (define-constant ERR-INVALID-PRICE (err u404))
 
@@ -63,7 +64,7 @@
   }
 )
 
-;; Calculate and store risk score for a position
+;; Calculate basic risk score for a position
 (define-public (calculate-risk-score 
   (user principal) 
   (position-id uint)
@@ -101,6 +102,28 @@
       }
     )
     (ok final-risk-score)
+  )
+)
+
+;; Calculate portfolio-wide risk score
+(define-read-only (calculate-portfolio-risk (user principal) (position-ids (list 50 uint)))
+  (let
+    (
+      (total-risk (fold + (map get-position-risk-contribution position-ids) u0))
+      (position-count (len position-ids))
+    )
+    (if (> position-count u0)
+      (/ total-risk position-count)
+      u0
+    )
+  )
+)
+
+;; Helper function for portfolio risk calculation
+(define-private (get-position-risk-contribution (position-id uint))
+  (match (map-get? risk-scores { user: tx-sender, position-id: position-id })
+    risk-data (get risk-score risk-data)
+    u0
   )
 )
 
@@ -155,6 +178,16 @@
         max-ltv: max-ltv
       }
     )
+    (ok true)
+  )
+)
+
+;; Update global risk settings (admin only)
+(define-public (update-risk-settings (new-liquidation-bonus uint) (new-max-risk-score uint))
+  (begin
+    (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-UNAUTHORIZED)
+    (var-set liquidation-bonus new-liquidation-bonus)
+    (var-set max-risk-score new-max-risk-score)
     (ok true)
   )
 )
