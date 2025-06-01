@@ -5,6 +5,11 @@ authors = []
 telemetry = true
 cache_dir = './.cache'
 requirements = []
+[contracts.portfolio-tracker]
+path = 'contracts/portfolio-tracker.clar'
+clarity_version = 3
+epoch = 3.1
+
 [contracts.risk-engine]
 path = 'contracts/risk-engine.clar'
 clarity_version = 3
